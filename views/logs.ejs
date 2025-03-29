@@ -6,65 +6,107 @@
   <title><%= title %></title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="/socket.io/socket.io.js"></script>
   <style>
     :root {
-      --primary-color: #3b82f6;
-      --primary-dark: #1d4ed8;
-      --primary-light: #60a5fa;
-      --secondary-color: #9ca3af;
-      --success-color: #10b981;
-      --warning-color: #f59e0b;
-      --danger-color: #ef4444;
-      --info-color: #0ea5e9;
-      --dark-bg: #111827;
-      --darker-bg: #0f172a;
-      --card-bg: #1e293b;
-      --border-color: #374151;
-      --text-color: #e5e7eb;
-      --text-muted: #9ca3af;
-      --log-bg: #0f172a;
+      --primary-color: #FF36AB;
+      --primary-dark: #D9097C;
+      --primary-light: #FF70C7;
+      --secondary-color: #AF69EF;
+      --success-color: #50EEBB;
+      --warning-color: #FFD166;
+      --danger-color: #FF6B6B;
+      --info-color: #64B5F6;
+      --dark-bg: #181025;
+      --darker-bg: #13101c;
+      --card-bg: #241b33;
+      --log-bg: #1a142a;
+      --border-color: #442a56;
+      --text-color: #f0e6ff;
+      --text-muted: #a692c5;
+      --shadow-color: rgba(255, 54, 171, 0.3);
     }
     
     body {
       background-color: var(--dark-bg);
       color: var(--text-color);
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
       line-height: 1.5;
       min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+    
+    /* Background pattern */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        radial-gradient(circle at 25% 25%, rgba(255, 54, 171, 0.05) 2%, transparent 7%),
+        radial-gradient(circle at 75% 75%, rgba(175, 105, 239, 0.05) 2%, transparent 7%);
+      background-size: 50px 50px;
+      z-index: -1;
     }
     
     .navbar {
       background-color: var(--darker-bg);
       border-bottom: 1px solid var(--border-color);
       padding: 0.75rem 1rem;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
     }
     
     .navbar-brand {
-      font-weight: 600;
-      color: var(--text-color);
+      font-family: 'Pacifico', cursive;
+      font-weight: 400;
+      color: var(--primary-color);
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      font-size: 1.5rem;
+      text-shadow: 0 0 10px rgba(255, 54, 171, 0.5);
     }
     
     .navbar-brand i {
-      color: var(--primary-light);
+      color: var(--primary-color);
     }
     
     .card {
       border: none;
-      border-radius: 8px;
+      border-radius: 15px;
       background-color: var(--card-bg);
       margin-bottom: 1.5rem;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s ease;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+      z-index: 1;
+    }
+    
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 20px rgba(0, 0, 0, 0.4), 0 0 20px var(--shadow-color);
     }
     
     .card-header {
       background-color: var(--card-bg);
-      padding: 1rem 1.25rem;
+      padding: 1.2rem 1.5rem;
       border-bottom: 1px solid var(--border-color);
       font-weight: 600;
       display: flex;
@@ -74,7 +116,7 @@
     }
     
     .card-header i {
-      color: var(--primary-light);
+      color: var(--primary-color);
       margin-right: 0.5rem;
     }
     
@@ -82,10 +124,11 @@
       font-weight: 500;
       font-size: 0.875rem;
       padding: 0.375rem 0.75rem;
-      border-radius: 0.375rem;
+      border-radius: 20px;
       display: inline-flex;
       align-items: center;
       gap: 0.25rem;
+      transition: all 0.2s ease;
     }
     
     .btn-sm {
@@ -94,14 +137,15 @@
     }
     
     .btn-outline-primary {
-      color: var(--primary-light);
-      border-color: var(--primary-light);
+      color: var(--primary-color);
+      border-color: var(--primary-color);
     }
     
     .btn-outline-primary:hover {
-      background-color: var(--primary-dark);
-      border-color: var(--primary-light);
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
       color: white;
+      box-shadow: 0 0 10px var(--primary-color);
     }
     
     .btn-outline-secondary {
@@ -111,7 +155,8 @@
     
     .btn-outline-secondary:hover {
       background-color: var(--secondary-color);
-      color: var(--darker-bg);
+      color: white;
+      box-shadow: 0 0 10px var(--secondary-color);
     }
     
     .btn-outline-success {
@@ -121,7 +166,8 @@
     
     .btn-outline-success:hover {
       background-color: var(--success-color);
-      color: white;
+      color: #0c261a;
+      box-shadow: 0 0 10px var(--success-color);
     }
     
     .btn-outline-danger {
@@ -132,6 +178,7 @@
     .btn-outline-danger:hover {
       background-color: var(--danger-color);
       color: white;
+      box-shadow: 0 0 10px var(--danger-color);
     }
     
     .form-time {
@@ -143,7 +190,7 @@
     .logs-container {
       background-color: var(--log-bg);
       border: 1px solid var(--border-color);
-      border-radius: 6px;
+      border-radius: 12px;
       padding: 1rem;
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.85rem;
@@ -152,6 +199,7 @@
       overflow-y: auto;
       white-space: pre-wrap;
       color: var(--text-color);
+      position: relative;
     }
 
     .logs-container::-webkit-scrollbar {
@@ -164,8 +212,12 @@
     }
 
     .logs-container::-webkit-scrollbar-thumb {
-      background-color: rgba(255, 255, 255, 0.2);
+      background-color: rgba(255, 54, 171, 0.3);
       border-radius: 10px;
+    }
+    
+    .logs-container::-webkit-scrollbar-thumb:hover {
+      background-color: rgba(255, 54, 171, 0.5);
     }
     
     .log-info {
@@ -183,19 +235,21 @@
     .process-badge {
       display: inline-flex;
       align-items: center;
-      background-color: rgba(59, 130, 246, 0.2);
-      color: var(--primary-light);
+      background-color: rgba(255, 54, 171, 0.2);
+      color: var(--primary-color);
       font-weight: 500;
-      padding: 0.35em 0.65em;
-      font-size: 0.75em;
-      border-radius: 0.375rem;
+      padding: 0.35em 0.9em;
+      font-size: 0.8em;
+      border-radius: 20px;
       margin-left: 0.5rem;
+      box-shadow: 0 0 5px rgba(255, 54, 171, 0.2);
     }
     
     .alert-danger {
-      background-color: rgba(239, 68, 68, 0.2);
-      border-color: rgba(239, 68, 68, 0.3);
+      background-color: rgba(255, 107, 107, 0.2);
+      border-color: rgba(255, 107, 107, 0.3);
       color: var(--danger-color);
+      border-radius: 12px;
     }
     
     .live-indicator {
@@ -213,23 +267,24 @@
       background-color: var(--success-color);
       margin-right: 0.5rem;
       animation: pulse 1.5s infinite;
+      box-shadow: 0 0 10px var(--success-color);
     }
     
     @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.4; }
-      100% { opacity: 1; }
+      0% { opacity: 1; box-shadow: 0 0 10px var(--success-color); }
+      50% { opacity: 0.4; box-shadow: 0 0 5px var(--success-color); }
+      100% { opacity: 1; box-shadow: 0 0 10px var(--success-color); }
     }
     
     .connection-status {
       position: fixed;
       bottom: 1rem;
       right: 1rem;
-      padding: 0.5rem 1rem;
-      font-size: 0.75rem;
-      border-radius: 6px;
+      padding: 0.75rem 1.25rem;
+      font-size: 0.85rem;
+      border-radius: 20px;
       background-color: var(--success-color);
-      color: white;
+      color: #0c261a;
       display: flex;
       align-items: center;
       gap: 0.5rem;
@@ -237,6 +292,7 @@
       opacity: 0;
       transform: translateY(1rem);
       transition: opacity 0.3s, transform 0.3s;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     }
     
     .connection-status.visible {
@@ -246,16 +302,18 @@
     
     .connection-status.reconnecting {
       background-color: var(--warning-color);
+      color: #322714;
     }
     
     .connection-status.disconnected {
       background-color: var(--danger-color);
+      color: #2a0f0f;
     }
     
     .buffer-control {
       display: flex;
       justify-content: space-between;
-      padding: 0.5rem 0;
+      padding: 0.5rem 0 1rem 0;
       color: var(--text-muted);
       font-size: 0.8rem;
     }
@@ -268,7 +326,9 @@
     }
     
     .follow-logs input {
-      margin-right: 0.25rem;
+      margin-right: 0.5rem;
+      accent-color: var(--primary-color);
+      border-color: var(--primary-light);
     }
     
     .clear-logs {
@@ -290,7 +350,7 @@
     .log-settings {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 1.5rem;
     }
     
     .log-buffer-size {
@@ -303,27 +363,206 @@
       background-color: var(--card-bg);
       color: var(--text-color);
       border: 1px solid var(--border-color);
-      border-radius: 4px;
-      padding: 0.1rem 0.25rem;
+      border-radius: 20px;
+      padding: 0.25rem 0.5rem;
       font-size: 0.8rem;
+    }
+    
+    .log-highlight-controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .highlight-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    
+    .highlight-toggle input {
+      accent-color: var(--primary-color);
+    }
+    
+    .highlight-error {
+      color: var(--danger-color);
+    }
+    
+    .highlight-warning {
+      color: var(--warning-color);
+    }
+    
+    .highlight-info {
+      color: var(--info-color);
+    }
+    
+    .log-type-filter {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background-color: var(--log-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 0.25rem;
+    }
+    
+    .log-type-btn {
+      border: none;
+      background: none;
+      padding: 0.25rem 0.75rem;
+      border-radius: 15px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: var(--text-muted);
+    }
+    
+    .log-type-btn.active {
+      background-color: var(--primary-color);
+      color: white;
+      box-shadow: 0 0 10px var(--primary-color);
+    }
+    
+    .log-search {
+      position: relative;
+      margin-left: auto;
+    }
+    
+    .log-search input {
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 0.25rem 0.75rem 0.25rem 2rem;
+      font-size: 0.75rem;
+      background-color: var(--card-bg);
+      color: var(--text-color);
+    }
+    
+    .log-search input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 8px var(--primary-color);
+    }
+    
+    .log-search i {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+    }
+    
+    .empty-logs {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-muted);
+    }
+    
+    .empty-logs i {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      color: var(--primary-light);
+      animation: float 3s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+      100% { transform: translateY(0px); }
+    }
+    
+    .timestamp {
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      margin-right: 0.5rem;
+    }
+    
+    .action-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    
+    .action-group {
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    /* Log line animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .log-line {
+      animation: fadeIn 0.2s ease-out forwards;
+      position: relative;
+      padding-left: 0.5rem;
+    }
+    
+    .log-line:hover {
+      background-color: rgba(255, 54, 171, 0.1);
+    }
+    
+    /* Star background */
+    .star {
+      position: fixed;
+      width: 3px;
+      height: 3px;
+      background-color: white;
+      border-radius: 50%;
+      z-index: -1;
+      animation: twinkle 5s infinite;
+    }
+    
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.2; }
+      50% { opacity: 0.8; }
+    }
+    
+    #notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 1rem;
+      color: white;
+      border-radius: 15px;
+      display: none;
+      z-index: 1000;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      max-width: 350px;
+      font-weight: 500;
+      backdrop-filter: blur(10px);
     }
   </style>
 </head>
 <body>
-  <nav class="navbar navbar-expand-lg mb-4">
+  <div id="notification"></div>
+  <div id="stars-container"></div>
+  
+  <nav class="navbar mb-4">
     <div class="container">
       <a class="navbar-brand" href="/">
-        <i class="bi bi-hdd-stack"></i> PM2 Dashboard
+        <i class="bi bi-stars"></i> PM2 Dashboard
       </a>
       <div class="d-flex gap-2">
         <a href="/" class="btn btn-sm btn-outline-secondary">
           <i class="bi bi-arrow-left"></i> Back
         </a>
         <button id="streamToggle" class="btn btn-sm btn-outline-success">
-          <i class="bi bi-pause-fill"></i> Pause Stream
+          <i class="bi bi-pause-fill"></i> Pause
         </button>
         <button id="clearLogs" class="btn btn-sm btn-outline-secondary">
           <i class="bi bi-trash"></i> Clear
+        </button>
+        <button id="downloadLogs" class="btn btn-sm btn-outline-primary">
+          <i class="bi bi-download"></i> Download
         </button>
       </div>
     </div>
@@ -352,6 +591,22 @@
         <div class="form-time" id="time"></div>
       </div>
       <div class="card-body">
+        <div class="action-bar">
+          <div class="action-group">
+            <div class="log-type-filter">
+              <button class="log-type-btn active" data-type="all">All</button>
+              <button class="log-type-btn" data-type="error">Errors</button>
+              <button class="log-type-btn" data-type="warning">Warnings</button>
+              <button class="log-type-btn" data-type="info">Info</button>
+            </div>
+          </div>
+          
+          <div class="log-search">
+            <i class="bi bi-search"></i>
+            <input type="text" id="logSearch" placeholder="Search logs...">
+          </div>
+        </div>
+        
         <div class="buffer-control">
           <div class="log-settings">
             <label class="follow-logs">
@@ -363,7 +618,6 @@
                 <option value="1000">1,000 lines</option>
                 <option value="5000" selected>5,000 lines</option>
                 <option value="10000">10,000 lines</option>
-                <option value="50000">50,000 lines</option>
               </select>
             </div>
           </div>
@@ -371,13 +625,19 @@
             <i class="bi bi-trash"></i> Clear logs
           </button>
         </div>
+        
         <div class="logs-container" id="logs-container">
           <% if (logs.length === 0) { %>
-            <div class="text-center text-muted py-4">Waiting for logs...</div>
+            <div class="empty-logs">
+              <i class="bi bi-cloud-slash"></i>
+              <p>Waiting for logs...</p>
+              <p class="text-muted">Logs will appear here in real-time</p>
+            </div>
           <% } else { %>
-            <%- logs.replace(/\[ERROR\]|\bERROR\b|Error:/gi, match => `<span class="log-error">${match}</span>`)
-                     .replace(/\[INFO\]|\bINFO\b|info:/gi, match => `<span class="log-info">${match}</span>`)
-                     .replace(/\[WARN\]|\bWARN\b|\bWARNING\b|warn:/gi, match => `<span class="log-warning">${match}</span>`) %>
+            <%- logs
+                .replace(/\[ERROR\]|\bERROR\b|Error:/gi, match => `<span class="log-error">${match}</span>`)
+                .replace(/\[INFO\]|\bINFO\b|info:/gi, match => `<span class="log-info">${match}</span>`)
+                .replace(/\[WARN\]|\bWARN\b|\bWARNING\b|warn:/gi, match => `<span class="log-warning">${match}</span>`) %>
           <% } %>
         </div>
       </div>
@@ -392,20 +652,146 @@
     const followLogsCheckbox = document.getElementById('followLogs');
     const bufferSizeSelect = document.getElementById('bufferSize');
     const streamToggle = document.getElementById('streamToggle');
-    const clearLogsBtn = document.getElementById('clearLogs');
+    const clearLogsBtn = document.getElementById('clearLogsBtn');
+    const downloadLogsBtn = document.getElementById('downloadLogs');
     const connectionStatus = document.querySelector('.connection-status');
     const connectionStatusText = document.getElementById('connectionStatusText');
+    const logSearch = document.getElementById('logSearch');
+    const logTypeButtons = document.querySelectorAll('.log-type-btn');
+    const liveIndicator = document.querySelector('.live-indicator');
+    const notification = document.getElementById('notification');
     
     let isStreaming = true;
     let bufferSize = parseInt(bufferSizeSelect.value);
     let logLines = 0;
+    let currentFilter = 'all';
+    let searchTerm = '';
     
-    // Function to format log data with syntax highlighting
+    // Create starry background
+    function createStars() {
+        const starsContainer = document.getElementById('stars-container');
+      const starsCount = 100;
+      
+      for (let i = 0; i < starsCount; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        
+        // Random position
+        star.style.left = `${Math.random() * 100}%`;
+        star.style.top = `${Math.random() * 100}%`;
+        
+        // Random size
+        const size = Math.random() * 2 + 1;
+        star.style.width = `${size}px`;
+        star.style.height = `${size}px`;
+        
+        // Random animation delay
+        star.style.animationDelay = `${Math.random() * 5}s`;
+        
+        // Random color (whites, light blues, light purples)
+        const colors = ['#ffffff', '#f0f8ff', '#f5f0ff', '#ffe6f2'];
+        star.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        
+        starsContainer.appendChild(star);
+      }
+    }
+    
+    // Initialize stars
+    createStars();
+    
+    // Function to determine log type
+    function getLogType(text) {
+      if (/\[ERROR\]|\bERROR\b|Error:/i.test(text)) return 'error';
+      if (/\[WARN\]|\bWARN\b|\bWARNING\b|warn:/i.test(text)) return 'warning';
+      if (/\[INFO\]|\bINFO\b|info:/i.test(text)) return 'info';
+      return 'normal';
+    }
+    
+    // Function to filter logs by type and search term
+    function filterLogs() {
+      const logLines = logsContainer.querySelectorAll('.log-line');
+      
+      logLines.forEach(line => {
+        const logType = line.getAttribute('data-type');
+        const logText = line.textContent.toLowerCase();
+        
+        const matchesType = currentFilter === 'all' || logType === currentFilter;
+        const matchesSearch = !searchTerm || logText.includes(searchTerm);
+        
+        line.style.display = matchesType && matchesSearch ? '' : 'none';
+      });
+    }
+    
+    // Function to format log data with syntax highlighting and timestamp
     function formatLogLine(text) {
-      return text
+      const timestamp = new Date().toLocaleTimeString();
+      const logType = getLogType(text);
+      
+      let formattedText = text
         .replace(/\[ERROR\]|\bERROR\b|Error:/gi, match => `<span class="log-error">${match}</span>`)
         .replace(/\[INFO\]|\bINFO\b|info:/gi, match => `<span class="log-info">${match}</span>`)
         .replace(/\[WARN\]|\bWARN\b|\bWARNING\b|warn:/gi, match => `<span class="log-warning">${match}</span>`);
+      
+      return `<span class="timestamp">[${timestamp}]</span>${formattedText}`;
+    }
+    
+    // Function to add a new log line
+    function addLogLine(text, type = 'normal') {
+      // Create a log line element
+      const logLine = document.createElement('div');
+      logLine.className = 'log-line';
+      logLine.setAttribute('data-type', type);
+      logLine.innerHTML = formatLogLine(text);
+      
+      // Append to container
+      logsContainer.appendChild(logLine);
+      logLines++;
+      
+      // Apply current filters
+      const matchesType = currentFilter === 'all' || type === currentFilter;
+      const matchesSearch = !searchTerm || text.toLowerCase().includes(searchTerm);
+      logLine.style.display = matchesType && matchesSearch ? '' : 'none';
+      
+      // Enforce buffer size limit
+      while (logLines > bufferSize) {
+        if (logsContainer.firstChild && logsContainer.firstChild.classList.contains('log-line')) {
+          logsContainer.removeChild(logsContainer.firstChild);
+          logLines--;
+        } else if (logsContainer.firstChild) {
+          // Skip non-log line elements (like empty logs message)
+          const nextSibling = logsContainer.firstChild.nextSibling;
+          if (nextSibling) {
+            logsContainer.removeChild(nextSibling);
+          } else {
+            break;
+          }
+        } else {
+          break;
+        }
+      }
+      
+      // Auto-scroll if enabled
+      scrollToBottom();
+    }
+    
+    // Function to add system message
+    function addSystemMessage(type, message) {
+      const timestamp = new Date().toLocaleTimeString();
+      let className = '';
+      
+      if (type === 'error') className = 'log-error';
+      else if (type === 'warning') className = 'log-warning';
+      else if (type === 'info') className = 'log-info';
+      
+      const logLine = document.createElement('div');
+      logLine.className = 'log-line';
+      logLine.setAttribute('data-type', type);
+      logLine.innerHTML = `<span class="timestamp">[${timestamp}]</span><span class="${className}">[SYSTEM] ${message}</span>`;
+      
+      logsContainer.appendChild(logLine);
+      logLines++;
+      
+      scrollToBottom();
     }
     
     // Function to auto-scroll to bottom if enabled
@@ -413,6 +799,63 @@
       if (followLogsCheckbox.checked) {
         logsContainer.scrollTop = logsContainer.scrollHeight;
       }
+    }
+    
+    // Function to show notification
+    function showNotification(message, isError = false) {
+      notification.textContent = message;
+      notification.style.backgroundColor = isError ? 'rgba(255, 107, 107, 0.9)' : 'rgba(80, 238, 187, 0.9)';
+      notification.style.color = isError ? '#2a0f0f' : '#0c261a';
+      notification.style.display = 'block';
+      
+      setTimeout(() => {
+        notification.style.display = 'none';
+      }, 3000);
+    }
+    
+    // Function to update live indicator
+    function updateLiveIndicator() {
+      if (isStreaming) {
+        liveIndicator.innerHTML = '<span class="dot"></span> LIVE';
+        liveIndicator.style.color = 'var(--success-color)';
+        liveIndicator.querySelector('.dot').style.backgroundColor = 'var(--success-color)';
+        liveIndicator.querySelector('.dot').style.boxShadow = '0 0 10px var(--success-color)';
+      } else {
+        liveIndicator.innerHTML = '<span class="dot"></span> PAUSED';
+        liveIndicator.style.color = 'var(--danger-color)';
+        liveIndicator.querySelector('.dot').style.backgroundColor = 'var(--danger-color)';
+        liveIndicator.querySelector('.dot').style.boxShadow = '0 0 10px var(--danger-color)';
+      }
+    }
+    
+    // Function to download logs
+    function downloadLogs() {
+      // Get all visible log lines
+      const visibleLogs = [];
+      const logLineElements = logsContainer.querySelectorAll('.log-line');
+      
+      logLineElements.forEach(line => {
+        if (line.style.display !== 'none') {
+          visibleLogs.push(line.textContent);
+        }
+      });
+      
+      // Create blob and download
+      const blob = new Blob([visibleLogs.join('\n')], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      
+      a.href = url;
+      a.download = `${processName}_logs_${new Date().toISOString().replace(/[:.]/g, '-')}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+      
+      showNotification('Logs downloaded successfully');
     }
     
     // Start the log stream when page loads
@@ -426,6 +869,12 @@
         connectionStatus.classList.remove('visible');
       }, 3000);
       
+      // Remove empty logs message if present
+      const emptyLogs = logsContainer.querySelector('.empty-logs');
+      if (emptyLogs) {
+        logsContainer.removeChild(emptyLogs);
+      }
+      
       // Request log stream for this process
       socket.emit('stream_logs', { processName });
     });
@@ -438,6 +887,25 @@
       connectionStatusText.textContent = `Reconnecting (${attemptNumber})...`;
     });
     
+    // Handle reconnect
+    socket.io.on('reconnect', () => {
+      console.log('Reconnected to server');
+      connectionStatus.classList.add('visible');
+      connectionStatus.classList.remove('reconnecting', 'disconnected');
+      connectionStatusText.textContent = 'Reconnected';
+      
+      setTimeout(() => {
+        connectionStatus.classList.remove('visible');
+      }, 3000);
+      
+      // Restart log streaming if it was active
+      if (isStreaming) {
+        socket.emit('stream_logs', { processName });
+      }
+      
+      addSystemMessage('info', 'Reconnected to server');
+    });
+    
     // Handle disconnect
     socket.on('disconnect', (reason) => {
       console.log('Disconnected:', reason);
@@ -445,52 +913,25 @@
       connectionStatus.classList.remove('reconnecting');
       connectionStatusText.textContent = 'Disconnected';
       
-      // Add a placeholder in the logs
-      const disconnectMsg = document.createElement('div');
-      disconnectMsg.innerHTML = `<span class="log-error">[SYSTEM] Disconnected from server: ${reason}</span>`;
-      logsContainer.appendChild(disconnectMsg);
-      scrollToBottom();
+      addSystemMessage('error', `Disconnected from server: ${reason}`);
     });
     
     // Handle incoming log data
     socket.on('log_data', (data) => {
       if (!isStreaming) return;
       
-      // Create a document fragment for better performance
-      const fragment = document.createDocumentFragment();
-      
       // Split the incoming data into lines
       const lines = data.data.split('\n').filter(line => line.trim() !== '');
       
       lines.forEach(line => {
-        const logLine = document.createElement('div');
-        logLine.innerHTML = formatLogLine(line);
-        fragment.appendChild(logLine);
-        logLines++;
+        const logType = getLogType(line);
+        addLogLine(line, logType);
       });
-      
-      // Append all lines at once
-      logsContainer.appendChild(fragment);
-      
-      // Enforce buffer size limit
-      while (logLines > bufferSize) {
-        if (logsContainer.firstChild) {
-          logsContainer.removeChild(logsContainer.firstChild);
-          logLines--;
-        } else {
-          break;
-        }
-      }
-      
-      scrollToBottom();
     });
     
     // Handle log errors
     socket.on('log_error', (data) => {
-      const errorMsg = document.createElement('div');
-      errorMsg.innerHTML = `<span class="log-error">[SYSTEM] Error retrieving logs: ${data.error}</span>`;
-      logsContainer.appendChild(errorMsg);
-      scrollToBottom();
+      addSystemMessage('error', `Error retrieving logs: ${data.error}`);
     });
     
     // Toggle log streaming
@@ -498,33 +939,44 @@
       isStreaming = !isStreaming;
       
       if (isStreaming) {
-        streamToggle.innerHTML = '<i class="bi bi-pause-fill"></i> Pause Stream';
+        streamToggle.innerHTML = '<i class="bi bi-pause-fill"></i> Pause';
         streamToggle.classList.remove('btn-outline-primary');
         streamToggle.classList.add('btn-outline-success');
         socket.emit('stream_logs', { processName });
+        showNotification('Log streaming resumed');
       } else {
-        streamToggle.innerHTML = '<i class="bi bi-play-fill"></i> Resume Stream';
+        streamToggle.innerHTML = '<i class="bi bi-play-fill"></i> Resume';
         streamToggle.classList.remove('btn-outline-success');
         streamToggle.classList.add('btn-outline-primary');
         socket.emit('stop_stream', { processName });
+        showNotification('Log streaming paused');
       }
+      
+      updateLiveIndicator();
     });
     
     // Clear logs button
     clearLogsBtn.addEventListener('click', () => {
       logsContainer.innerHTML = '';
       logLines = 0;
+      showNotification('Logs cleared');
     });
+    
+    // Download logs button
+    downloadLogsBtn.addEventListener('click', downloadLogs);
     
     // Buffer size change handler
     bufferSizeSelect.addEventListener('change', () => {
       bufferSize = parseInt(bufferSizeSelect.value);
+      showNotification(`Buffer size changed to ${bufferSize.toLocaleString()} lines`);
       
       // Enforce the new buffer size
       while (logLines > bufferSize) {
-        if (logsContainer.firstChild) {
+        if (logsContainer.firstChild && logsContainer.firstChild.classList.contains('log-line')) {
           logsContainer.removeChild(logsContainer.firstChild);
           logLines--;
+        } else if (logsContainer.firstChild) {
+          break;
         } else {
           break;
         }
@@ -545,108 +997,26 @@
       }
     });
     
-    // Display time
-    function updateTime() {
-      const now = new Date();
-      const options = { 
-        weekday: 'short',
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric',
-        hour: '2-digit', 
-        minute: '2-digit',
-        second: '2-digit'
-      };
-      
-      document.getElementById('time').textContent = now.toLocaleString('en-US', options);
-    }
-
-   setInterval(updateTime, 1000);
-    updateTime();
-    
-    // Auto-scroll to bottom on initial load
-    scrollToBottom();
-    
-    // Cleanup when page is unloaded
-    window.addEventListener('beforeunload', () => {
-      socket.emit('stop_stream', { processName });
+    // Log search functionality
+    logSearch.addEventListener('input', () => {
+      searchTerm = logSearch.value.toLowerCase();
+      filterLogs();
     });
     
-    // Handle clear logs button (for the inline button)
-    document.getElementById('clearLogsBtn').addEventListener('click', () => {
-      logsContainer.innerHTML = '';
-      logLines = 0;
+    // Log type filter functionality
+    logTypeButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        // Update active button
+        document.querySelector('.log-type-btn.active').classList.remove('active');
+        btn.classList.add('active');
+        
+        // Update filter and apply
+        currentFilter = btn.dataset.type;
+        filterLogs();
+      });
     });
     
-    // Update live indicator when stream is toggled
-    const liveIndicator = document.querySelector('.live-indicator');
-    
-    function updateLiveIndicator() {
-      if (isStreaming) {
-        liveIndicator.innerHTML = '<span class="dot"></span> LIVE';
-        liveIndicator.style.color = 'var(--success-color)';
-      } else {
-        liveIndicator.innerHTML = '<span class="dot" style="background-color: var(--danger-color);"></span> PAUSED';
-        liveIndicator.style.color = 'var(--danger-color)';
-      }
-    }
-    
-    // Add event to streamToggle to update live indicator
-    streamToggle.addEventListener('click', updateLiveIndicator);
-    
-    // Listen for reconnect event
-    socket.io.on('reconnect', () => {
-      console.log('Reconnected to server');
-      connectionStatus.classList.add('visible');
-      connectionStatus.classList.remove('reconnecting', 'disconnected');
-      connectionStatusText.textContent = 'Reconnected';
-      
-      // Restart log streaming if it was active
-      if (isStreaming) {
-        socket.emit('stream_logs', { processName });
-      }
-      
-      setTimeout(() => {
-        connectionStatus.classList.remove('visible');
-      }, 3000);
-      
-      // Add a placeholder in the logs
-      const reconnectMsg = document.createElement('div');
-      reconnectMsg.innerHTML = '<span class="log-info">[SYSTEM] Reconnected to server</span>';
-      logsContainer.appendChild(reconnectMsg);
-      scrollToBottom();
-    });
-    
-    // Function to download logs
-    function downloadLogs() {
-      const logText = Array.from(logsContainer.childNodes)
-        .map(node => node.textContent)
-        .join('\n');
-      
-      const blob = new Blob([logText], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      
-      a.href = url;
-      a.download = `${processName}_logs_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 100);
-    }
-    
-    // Add download button to UI
-    const navButtonGroup = streamToggle.parentElement;
-    const downloadButton = document.createElement('button');
-    downloadButton.className = 'btn btn-sm btn-outline-secondary';
-    downloadButton.innerHTML = '<i class="bi bi-download"></i> Download';
-    downloadButton.addEventListener('click', downloadLogs);
-    navButtonGroup.appendChild(downloadButton);
-    
-    // Add keyboard shortcuts
+    // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
       // Ctrl+P to toggle pause/resume
       if (e.ctrlKey && e.key === 'p') {
@@ -665,5 +1035,51 @@
         e.preventDefault();
         downloadLogs();
       }
+      
+      // Escape to focus search
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        logSearch.focus();
+      }
     });
+    
+    // Display time
+    function updateTime() {
+      const now = new Date();
+      const options = { 
+        weekday: 'short',
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit', 
+        minute: '2-digit',
+        second: '2-digit'
+      };
+      
+      document.getElementById('time').textContent = now.toLocaleString('en-US', options);
+    }
+
+    setInterval(updateTime, 1000);
+    updateTime();
+    
+    // Count initial log lines
+    const initialLogLines = logsContainer.querySelectorAll('.log-line').length;
+    logLines = initialLogLines;
+    
+    // Apply data-type attribute to existing log lines
+    logsContainer.querySelectorAll('.log-line').forEach(line => {
+      const text = line.textContent;
+      const type = getLogType(text);
+      line.setAttribute('data-type', type);
+    });
+    
+    // Cleanup when page is unloaded
+    window.addEventListener('beforeunload', () => {
+      socket.emit('stop_stream', { processName });
+    });
+    
+    // Initial scroll to bottom
+    scrollToBottom();
   </script>
+</body>
+</html>

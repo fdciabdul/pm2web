@@ -22,6 +22,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // Store active log streams
 const activeLogStreams = {};
+// Store active connections to processes
+const processSubscriptions = {};
 
 // Connect to PM2
 const connectPM2 = () => {
@@ -64,15 +66,15 @@ const getLogs = (processName, lines = 100) => {
 
 // Stream logs for a specific process
 const streamLogs = (processName, socket) => {
-  // Kill any existing stream for this process
-  if (activeLogStreams[processName]) {
-    activeLogStreams[processName].kill();
-    delete activeLogStreams[processName];
+  // Kill any existing stream for this socket and process
+  if (activeLogStreams[`${socket.id}:${processName}`]) {
+    activeLogStreams[`${socket.id}:${processName}`].kill();
+    delete activeLogStreams[`${socket.id}:${processName}`];
   }
 
   // Create a new log stream
   const logProcess = spawn('pm2', ['logs', processName, '--raw', '--lines', '0']);
-  activeLogStreams[processName] = logProcess;
+  activeLogStreams[`${socket.id}:${processName}`] = logProcess;
 
   // Stream stdout
   logProcess.stdout.on('data', (data) => {
@@ -93,7 +95,7 @@ const streamLogs = (processName, socket) => {
   // Handle process exit
   logProcess.on('close', (code) => {
     console.log(`Log stream for ${processName} closed with code ${code}`);
-    delete activeLogStreams[processName];
+    delete activeLogStreams[`${socket.id}:${processName}`];
   });
 
   // Handle errors
@@ -103,7 +105,7 @@ const streamLogs = (processName, socket) => {
       processName,
       error: err.message
     });
-    delete activeLogStreams[processName];
+    delete activeLogStreams[`${socket.id}:${processName}`];
   });
 
   return logProcess;
@@ -116,7 +118,7 @@ const formatProcesses = (processes) => {
       id: proc.pm_id,
       name: proc.name,
       status: proc.pm2_env.status,
-      cpu: proc.monit ? `${proc.monit.cpu}%` : 'N/A',
+      cpu: proc.monit ? `${proc.monit.cpu.toFixed(1)}%` : 'N/A',
       memory: proc.monit ? `${Math.round(proc.monit.memory / 1024 / 1024)}MB` : 'N/A',
       uptime: proc.pm2_env.pm_uptime ? moment(proc.pm2_env.pm_uptime).fromNow() : 'N/A',
       restarts: proc.pm2_env.restart_time,
@@ -125,17 +127,47 @@ const formatProcesses = (processes) => {
   });
 };
 
+// Set up real-time process updates
+async function broadcastProcesses() {
+  try {
+    await connectPM2();
+    const processes = await listProcesses();
+    const formattedProcesses = formatProcesses(processes);
+    pm2.disconnect();
+    
+    // Broadcast to all clients subscribed to process updates
+    Object.keys(processSubscriptions).forEach(socketId => {
+      const socket = io.sockets.sockets.get(socketId);
+      if (socket && processSubscriptions[socketId]) {
+        socket.emit('processes_update', formattedProcesses);
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error broadcasting processes:', error);
+  }
+}
+
+// Set up periodic updates
+setInterval(broadcastProcesses, 5000);
+
 // Socket.IO connection handling
 io.on('connection', (socket) => {
-  console.log('A user connected', socket.id);
+  console.log('Client connected:', socket.id);
+  
+  // Handle request for process updates subscription
+  socket.on('subscribe_processes', () => {
+    console.log(`Socket ${socket.id} subscribed to process updates`);
+    processSubscriptions[socket.id] = true;
+    
+    // Send initial data
+    broadcastProcesses();
+  });
 
   // Handle request for log streaming
   socket.on('stream_logs', (data) => {
     const { processName } = data;
-    console.log(`Starting log stream for ${processName}`);
-    
-    // Join a room specific to this process
-    socket.join(`logs:${processName}`);
+    console.log(`Socket ${socket.id} requested log stream for ${processName}`);
     
     // Start streaming logs
     streamLogs(processName, socket);
@@ -144,35 +176,31 @@ io.on('connection', (socket) => {
   // Handle stop streaming
   socket.on('stop_stream', (data) => {
     const { processName } = data;
+    const streamKey = `${socket.id}:${processName}`;
     
-    // Leave the room
-    socket.leave(`logs:${processName}`);
-    
-    // Check if no clients are in the room anymore
-    const room = io.sockets.adapter.rooms.get(`logs:${processName}`);
-    if (!room || room.size === 0) {
-      // If no clients are listening, kill the stream
-      if (activeLogStreams[processName]) {
-        console.log(`Stopping log stream for ${processName}`);
-        activeLogStreams[processName].kill();
-        delete activeLogStreams[processName];
-      }
+    // Kill the stream if it exists
+    if (activeLogStreams[streamKey]) {
+      console.log(`Socket ${socket.id} stopped log stream for ${processName}`);
+      activeLogStreams[streamKey].kill();
+      delete activeLogStreams[streamKey];
     }
   });
 
   // Handle disconnection
   socket.on('disconnect', () => {
-    console.log('User disconnected', socket.id);
+    console.log('Client disconnected:', socket.id);
     
     // Cleanup any streams this socket was using
-    for (const processName in activeLogStreams) {
-      const room = io.sockets.adapter.rooms.get(`logs:${processName}`);
-      if (!room || room.size === 0) {
-        console.log(`Stopping log stream for ${processName} after disconnect`);
-        activeLogStreams[processName].kill();
-        delete activeLogStreams[processName];
+    Object.keys(activeLogStreams).forEach(key => {
+      if (key.startsWith(`${socket.id}:`)) {
+        console.log(`Cleaning up log stream for ${key}`);
+        activeLogStreams[key].kill();
+        delete activeLogStreams[key];
       }
-    }
+    });
+    
+    // Remove from process subscriptions
+    delete processSubscriptions[socket.id];
   });
 });
 
@@ -232,6 +260,10 @@ app.post('/api/restart/:id', async (req, res) => {
       if (err) {
         return res.status(500).json({ success: false, error: err.message });
       }
+      
+      // Broadcast updated processes
+      setTimeout(broadcastProcesses, 500);
+      
       res.json({ success: true });
     });
   } catch (error) {
@@ -248,6 +280,10 @@ app.post('/api/stop/:id', async (req, res) => {
       if (err) {
         return res.status(500).json({ success: false, error: err.message });
       }
+      
+      // Broadcast updated processes
+      setTimeout(broadcastProcesses, 500);
+      
       res.json({ success: true });
     });
   } catch (error) {
@@ -264,6 +300,10 @@ app.post('/api/start/:id', async (req, res) => {
       if (err) {
         return res.status(500).json({ success: false, error: err.message });
       }
+      
+      // Broadcast updated processes
+      setTimeout(broadcastProcesses, 500);
+      
       res.json({ success: true });
     });
   } catch (error) {
@@ -280,6 +320,10 @@ app.post('/api/delete/:id', async (req, res) => {
       if (err) {
         return res.status(500).json({ success: false, error: err.message });
       }
+      
+      // Broadcast updated processes
+      setTimeout(broadcastProcesses, 500);
+      
       res.json({ success: true });
     });
   } catch (error) {
@@ -292,9 +336,11 @@ process.on('SIGINT', () => {
   console.log('Shutting down server...');
   
   // Kill all active log streams
-  for (const processName in activeLogStreams) {
-    activeLogStreams[processName].kill();
-  }
+  Object.values(activeLogStreams).forEach(stream => {
+    if (stream && typeof stream.kill === 'function') {
+      stream.kill();
+    }
+  });
   
   process.exit(0);
 });
