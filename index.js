@@ -1,12 +1,14 @@
 // Install required packages:
-// npm install express ejs pm2 moment axios
+// npm install express ejs pm2 moment socket.io
 
 const express = require('express');
 const path = require('path');
 const pm2 = require('pm2');
 const moment = require('moment');
-const { exec } = require('child_process');
+const { exec, spawn } = require('child_process');
 const app = express();
+const http = require('http').createServer(app);
+const io = require('socket.io')(http);
 const port = 3000;
 
 // Set EJS as templating engine
@@ -17,6 +19,9 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Store active log streams
+const activeLogStreams = {};
 
 // Connect to PM2
 const connectPM2 = () => {
@@ -44,7 +49,7 @@ const listProcesses = () => {
   });
 };
 
-// Get logs for a specific process
+// Get logs for a specific process - for initial load
 const getLogs = (processName, lines = 100) => {
   return new Promise((resolve, reject) => {
     exec(`pm2 logs ${processName} --lines ${lines} --nostream --raw`, (err, stdout, stderr) => {
@@ -55,6 +60,53 @@ const getLogs = (processName, lines = 100) => {
       }
     });
   });
+};
+
+// Stream logs for a specific process
+const streamLogs = (processName, socket) => {
+  // Kill any existing stream for this process
+  if (activeLogStreams[processName]) {
+    activeLogStreams[processName].kill();
+    delete activeLogStreams[processName];
+  }
+
+  // Create a new log stream
+  const logProcess = spawn('pm2', ['logs', processName, '--raw', '--lines', '0']);
+  activeLogStreams[processName] = logProcess;
+
+  // Stream stdout
+  logProcess.stdout.on('data', (data) => {
+    socket.emit('log_data', {
+      processName,
+      data: data.toString()
+    });
+  });
+
+  // Stream stderr
+  logProcess.stderr.on('data', (data) => {
+    socket.emit('log_data', {
+      processName,
+      data: data.toString()
+    });
+  });
+
+  // Handle process exit
+  logProcess.on('close', (code) => {
+    console.log(`Log stream for ${processName} closed with code ${code}`);
+    delete activeLogStreams[processName];
+  });
+
+  // Handle errors
+  logProcess.on('error', (err) => {
+    console.error(`Error in log stream for ${processName}:`, err);
+    socket.emit('log_error', {
+      processName,
+      error: err.message
+    });
+    delete activeLogStreams[processName];
+  });
+
+  return logProcess;
 };
 
 // Format processes data
@@ -73,6 +125,57 @@ const formatProcesses = (processes) => {
   });
 };
 
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log('A user connected', socket.id);
+
+  // Handle request for log streaming
+  socket.on('stream_logs', (data) => {
+    const { processName } = data;
+    console.log(`Starting log stream for ${processName}`);
+    
+    // Join a room specific to this process
+    socket.join(`logs:${processName}`);
+    
+    // Start streaming logs
+    streamLogs(processName, socket);
+  });
+
+  // Handle stop streaming
+  socket.on('stop_stream', (data) => {
+    const { processName } = data;
+    
+    // Leave the room
+    socket.leave(`logs:${processName}`);
+    
+    // Check if no clients are in the room anymore
+    const room = io.sockets.adapter.rooms.get(`logs:${processName}`);
+    if (!room || room.size === 0) {
+      // If no clients are listening, kill the stream
+      if (activeLogStreams[processName]) {
+        console.log(`Stopping log stream for ${processName}`);
+        activeLogStreams[processName].kill();
+        delete activeLogStreams[processName];
+      }
+    }
+  });
+
+  // Handle disconnection
+  socket.on('disconnect', () => {
+    console.log('User disconnected', socket.id);
+    
+    // Cleanup any streams this socket was using
+    for (const processName in activeLogStreams) {
+      const room = io.sockets.adapter.rooms.get(`logs:${processName}`);
+      if (!room || room.size === 0) {
+        console.log(`Stopping log stream for ${processName} after disconnect`);
+        activeLogStreams[processName].kill();
+        delete activeLogStreams[processName];
+      }
+    }
+  });
+});
+
 // Route for home page
 app.get('/', async (req, res) => {
   try {
@@ -83,14 +186,14 @@ app.get('/', async (req, res) => {
     
     res.render('index', {
       processes: formattedProcesses,
-      title: 'PM2 MATRIX CONTROL',
+      title: 'PM2 Dashboard',
       error: null
     });
   } catch (error) {
     console.error('Error:', error);
     res.render('index', {
       processes: [],
-      title: 'PM2 MATRIX CONTROL',
+      title: 'PM2 Dashboard',
       error: error.message
     });
   }
@@ -105,7 +208,7 @@ app.get('/logs/:name', async (req, res) => {
     res.render('logs', {
       logs,
       processName: name,
-      title: `LOGS: ${name}`,
+      title: `Logs: ${name}`,
       error: null
     });
   } catch (error) {
@@ -113,7 +216,7 @@ app.get('/logs/:name', async (req, res) => {
     res.render('logs', {
       logs: '',
       processName: req.params.name,
-      title: `LOGS: ${req.params.name}`,
+      title: `Logs: ${req.params.name}`,
       error: error.message
     });
   }
@@ -184,7 +287,19 @@ app.post('/api/delete/:id', async (req, res) => {
   }
 });
 
+// Clean up log streams when server shuts down
+process.on('SIGINT', () => {
+  console.log('Shutting down server...');
+  
+  // Kill all active log streams
+  for (const processName in activeLogStreams) {
+    activeLogStreams[processName].kill();
+  }
+  
+  process.exit(0);
+});
+
 // Start the server
-app.listen(port, () => {
+http.listen(port, () => {
   console.log(`PM2 Web UI running at http://localhost:${port}`);
 });

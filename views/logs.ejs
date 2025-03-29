@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="/socket.io/socket.io.js"></script>
   <style>
     :root {
       --primary-color: #3b82f6;
@@ -113,6 +114,26 @@
       color: var(--darker-bg);
     }
     
+    .btn-outline-success {
+      color: var(--success-color);
+      border-color: var(--success-color);
+    }
+    
+    .btn-outline-success:hover {
+      background-color: var(--success-color);
+      color: white;
+    }
+    
+    .btn-outline-danger {
+      color: var(--danger-color);
+      border-color: var(--danger-color);
+    }
+    
+    .btn-outline-danger:hover {
+      background-color: var(--danger-color);
+      color: white;
+    }
+    
     .form-time {
       font-size: 0.875rem;
       color: var(--text-muted);
@@ -176,6 +197,116 @@
       border-color: rgba(239, 68, 68, 0.3);
       color: var(--danger-color);
     }
+    
+    .live-indicator {
+      display: inline-flex;
+      align-items: center;
+      margin-left: 1rem;
+      font-size: 0.75rem;
+      color: var(--success-color);
+    }
+    
+    .live-indicator .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--success-color);
+      margin-right: 0.5rem;
+      animation: pulse 1.5s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.4; }
+      100% { opacity: 1; }
+    }
+    
+    .connection-status {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      padding: 0.5rem 1rem;
+      font-size: 0.75rem;
+      border-radius: 6px;
+      background-color: var(--success-color);
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      z-index: 1000;
+      opacity: 0;
+      transform: translateY(1rem);
+      transition: opacity 0.3s, transform 0.3s;
+    }
+    
+    .connection-status.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    
+    .connection-status.reconnecting {
+      background-color: var(--warning-color);
+    }
+    
+    .connection-status.disconnected {
+      background-color: var(--danger-color);
+    }
+    
+    .buffer-control {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+    
+    .follow-logs {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      margin-right: 1rem;
+    }
+    
+    .follow-logs input {
+      margin-right: 0.25rem;
+    }
+    
+    .clear-logs {
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      background: none;
+      border: none;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    
+    .clear-logs:hover {
+      color: var(--text-color);
+    }
+    
+    .log-settings {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .log-buffer-size {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .log-buffer-size select {
+      background-color: var(--card-bg);
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 0.1rem 0.25rem;
+      font-size: 0.8rem;
+    }
   </style>
 </head>
 <body>
@@ -188,12 +319,19 @@
         <a href="/" class="btn btn-sm btn-outline-secondary">
           <i class="bi bi-arrow-left"></i> Back
         </a>
-        <button class="btn btn-sm btn-outline-primary" onclick="location.reload()">
-          <i class="bi bi-arrow-clockwise"></i> Refresh
+        <button id="streamToggle" class="btn btn-sm btn-outline-success">
+          <i class="bi bi-pause-fill"></i> Pause Stream
+        </button>
+        <button id="clearLogs" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-trash"></i> Clear
         </button>
       </div>
     </div>
   </nav>
+  
+  <div class="connection-status">
+    <i class="bi bi-wifi"></i> <span id="connectionStatusText">Connected</span>
+  </div>
   
   <div class="container">
     <% if (error) { %>
@@ -204,16 +342,38 @@
     
     <div class="card">
       <div class="card-header">
-        <div>
+        <div class="d-flex align-items-center">
           <i class="bi bi-file-text"></i> Logs 
           <span class="process-badge"><%= processName %></span>
+          <span class="live-indicator">
+            <span class="dot"></span> LIVE
+          </span>
         </div>
         <div class="form-time" id="time"></div>
       </div>
       <div class="card-body">
+        <div class="buffer-control">
+          <div class="log-settings">
+            <label class="follow-logs">
+              <input type="checkbox" id="followLogs" checked> Auto-scroll
+            </label>
+            <div class="log-buffer-size">
+              <span>Buffer size:</span>
+              <select id="bufferSize">
+                <option value="1000">1,000 lines</option>
+                <option value="5000" selected>5,000 lines</option>
+                <option value="10000">10,000 lines</option>
+                <option value="50000">50,000 lines</option>
+              </select>
+            </div>
+          </div>
+          <button class="clear-logs" id="clearLogsBtn">
+            <i class="bi bi-trash"></i> Clear logs
+          </button>
+        </div>
         <div class="logs-container" id="logs-container">
           <% if (logs.length === 0) { %>
-            No logs available for this process.
+            <div class="text-center text-muted py-4">Waiting for logs...</div>
           <% } else { %>
             <%- logs.replace(/\[ERROR\]|\bERROR\b|Error:/gi, match => `<span class="log-error">${match}</span>`)
                      .replace(/\[INFO\]|\bINFO\b|info:/gi, match => `<span class="log-info">${match}</span>`)
@@ -225,10 +385,166 @@
   </div>
   
   <script>
-    // Auto-scroll to bottom of logs
+    // Socket.IO setup
+    const socket = io();
     const logsContainer = document.getElementById('logs-container');
-    logsContainer.scrollTop = logsContainer.scrollHeight;
-
+    const processName = '<%= processName %>';
+    const followLogsCheckbox = document.getElementById('followLogs');
+    const bufferSizeSelect = document.getElementById('bufferSize');
+    const streamToggle = document.getElementById('streamToggle');
+    const clearLogsBtn = document.getElementById('clearLogs');
+    const connectionStatus = document.querySelector('.connection-status');
+    const connectionStatusText = document.getElementById('connectionStatusText');
+    
+    let isStreaming = true;
+    let bufferSize = parseInt(bufferSizeSelect.value);
+    let logLines = 0;
+    
+    // Function to format log data with syntax highlighting
+    function formatLogLine(text) {
+      return text
+        .replace(/\[ERROR\]|\bERROR\b|Error:/gi, match => `<span class="log-error">${match}</span>`)
+        .replace(/\[INFO\]|\bINFO\b|info:/gi, match => `<span class="log-info">${match}</span>`)
+        .replace(/\[WARN\]|\bWARN\b|\bWARNING\b|warn:/gi, match => `<span class="log-warning">${match}</span>`);
+    }
+    
+    // Function to auto-scroll to bottom if enabled
+    function scrollToBottom() {
+      if (followLogsCheckbox.checked) {
+        logsContainer.scrollTop = logsContainer.scrollHeight;
+      }
+    }
+    
+    // Start the log stream when page loads
+    socket.on('connect', () => {
+      console.log('Connected to server');
+      connectionStatus.classList.add('visible');
+      connectionStatus.classList.remove('reconnecting', 'disconnected');
+      connectionStatusText.textContent = 'Connected';
+      
+      setTimeout(() => {
+        connectionStatus.classList.remove('visible');
+      }, 3000);
+      
+      // Request log stream for this process
+      socket.emit('stream_logs', { processName });
+    });
+    
+    // Handle reconnecting
+    socket.on('reconnecting', (attemptNumber) => {
+      console.log('Reconnecting...', attemptNumber);
+      connectionStatus.classList.add('visible', 'reconnecting');
+      connectionStatus.classList.remove('disconnected');
+      connectionStatusText.textContent = `Reconnecting (${attemptNumber})...`;
+    });
+    
+    // Handle disconnect
+    socket.on('disconnect', (reason) => {
+      console.log('Disconnected:', reason);
+      connectionStatus.classList.add('visible', 'disconnected');
+      connectionStatus.classList.remove('reconnecting');
+      connectionStatusText.textContent = 'Disconnected';
+      
+      // Add a placeholder in the logs
+      const disconnectMsg = document.createElement('div');
+      disconnectMsg.innerHTML = `<span class="log-error">[SYSTEM] Disconnected from server: ${reason}</span>`;
+      logsContainer.appendChild(disconnectMsg);
+      scrollToBottom();
+    });
+    
+    // Handle incoming log data
+    socket.on('log_data', (data) => {
+      if (!isStreaming) return;
+      
+      // Create a document fragment for better performance
+      const fragment = document.createDocumentFragment();
+      
+      // Split the incoming data into lines
+      const lines = data.data.split('\n').filter(line => line.trim() !== '');
+      
+      lines.forEach(line => {
+        const logLine = document.createElement('div');
+        logLine.innerHTML = formatLogLine(line);
+        fragment.appendChild(logLine);
+        logLines++;
+      });
+      
+      // Append all lines at once
+      logsContainer.appendChild(fragment);
+      
+      // Enforce buffer size limit
+      while (logLines > bufferSize) {
+        if (logsContainer.firstChild) {
+          logsContainer.removeChild(logsContainer.firstChild);
+          logLines--;
+        } else {
+          break;
+        }
+      }
+      
+      scrollToBottom();
+    });
+    
+    // Handle log errors
+    socket.on('log_error', (data) => {
+      const errorMsg = document.createElement('div');
+      errorMsg.innerHTML = `<span class="log-error">[SYSTEM] Error retrieving logs: ${data.error}</span>`;
+      logsContainer.appendChild(errorMsg);
+      scrollToBottom();
+    });
+    
+    // Toggle log streaming
+    streamToggle.addEventListener('click', () => {
+      isStreaming = !isStreaming;
+      
+      if (isStreaming) {
+        streamToggle.innerHTML = '<i class="bi bi-pause-fill"></i> Pause Stream';
+        streamToggle.classList.remove('btn-outline-primary');
+        streamToggle.classList.add('btn-outline-success');
+        socket.emit('stream_logs', { processName });
+      } else {
+        streamToggle.innerHTML = '<i class="bi bi-play-fill"></i> Resume Stream';
+        streamToggle.classList.remove('btn-outline-success');
+        streamToggle.classList.add('btn-outline-primary');
+        socket.emit('stop_stream', { processName });
+      }
+    });
+    
+    // Clear logs button
+    clearLogsBtn.addEventListener('click', () => {
+      logsContainer.innerHTML = '';
+      logLines = 0;
+    });
+    
+    // Buffer size change handler
+    bufferSizeSelect.addEventListener('change', () => {
+      bufferSize = parseInt(bufferSizeSelect.value);
+      
+      // Enforce the new buffer size
+      while (logLines > bufferSize) {
+        if (logsContainer.firstChild) {
+          logsContainer.removeChild(logsContainer.firstChild);
+          logLines--;
+        } else {
+          break;
+        }
+      }
+    });
+    
+    // Scrolling handler to detect manual scrolling
+    let userScrolled = false;
+    logsContainer.addEventListener('scroll', () => {
+      const isAtBottom = logsContainer.scrollHeight - logsContainer.clientHeight <= logsContainer.scrollTop + 50;
+      
+      if (!isAtBottom && followLogsCheckbox.checked) {
+        userScrolled = true;
+        followLogsCheckbox.checked = false;
+      } else if (isAtBottom && userScrolled) {
+        userScrolled = false;
+        followLogsCheckbox.checked = true;
+      }
+    });
+    
     // Display time
     function updateTime() {
       const now = new Date();
@@ -245,8 +561,109 @@
       document.getElementById('time').textContent = now.toLocaleString('en-US', options);
     }
 
-    setInterval(updateTime, 1000);
+   setInterval(updateTime, 1000);
     updateTime();
+    
+    // Auto-scroll to bottom on initial load
+    scrollToBottom();
+    
+    // Cleanup when page is unloaded
+    window.addEventListener('beforeunload', () => {
+      socket.emit('stop_stream', { processName });
+    });
+    
+    // Handle clear logs button (for the inline button)
+    document.getElementById('clearLogsBtn').addEventListener('click', () => {
+      logsContainer.innerHTML = '';
+      logLines = 0;
+    });
+    
+    // Update live indicator when stream is toggled
+    const liveIndicator = document.querySelector('.live-indicator');
+    
+    function updateLiveIndicator() {
+      if (isStreaming) {
+        liveIndicator.innerHTML = '<span class="dot"></span> LIVE';
+        liveIndicator.style.color = 'var(--success-color)';
+      } else {
+        liveIndicator.innerHTML = '<span class="dot" style="background-color: var(--danger-color);"></span> PAUSED';
+        liveIndicator.style.color = 'var(--danger-color)';
+      }
+    }
+    
+    // Add event to streamToggle to update live indicator
+    streamToggle.addEventListener('click', updateLiveIndicator);
+    
+    // Listen for reconnect event
+    socket.io.on('reconnect', () => {
+      console.log('Reconnected to server');
+      connectionStatus.classList.add('visible');
+      connectionStatus.classList.remove('reconnecting', 'disconnected');
+      connectionStatusText.textContent = 'Reconnected';
+      
+      // Restart log streaming if it was active
+      if (isStreaming) {
+        socket.emit('stream_logs', { processName });
+      }
+      
+      setTimeout(() => {
+        connectionStatus.classList.remove('visible');
+      }, 3000);
+      
+      // Add a placeholder in the logs
+      const reconnectMsg = document.createElement('div');
+      reconnectMsg.innerHTML = '<span class="log-info">[SYSTEM] Reconnected to server</span>';
+      logsContainer.appendChild(reconnectMsg);
+      scrollToBottom();
+    });
+    
+    // Function to download logs
+    function downloadLogs() {
+      const logText = Array.from(logsContainer.childNodes)
+        .map(node => node.textContent)
+        .join('\n');
+      
+      const blob = new Blob([logText], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      
+      a.href = url;
+      a.download = `${processName}_logs_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+    }
+    
+    // Add download button to UI
+    const navButtonGroup = streamToggle.parentElement;
+    const downloadButton = document.createElement('button');
+    downloadButton.className = 'btn btn-sm btn-outline-secondary';
+    downloadButton.innerHTML = '<i class="bi bi-download"></i> Download';
+    downloadButton.addEventListener('click', downloadLogs);
+    navButtonGroup.appendChild(downloadButton);
+    
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      // Ctrl+P to toggle pause/resume
+      if (e.ctrlKey && e.key === 'p') {
+        e.preventDefault();
+        streamToggle.click();
+      }
+      
+      // Ctrl+L to clear logs
+      if (e.ctrlKey && e.key === 'l') {
+        e.preventDefault();
+        clearLogsBtn.click();
+      }
+      
+      // Ctrl+S to download logs
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        downloadLogs();
+      }
+    });
   </script>
-</body>
-</html>
